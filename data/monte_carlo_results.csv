@@ -1,0 +1,12 @@
+Model,Category,pct_negative_scenarios
+Whirlpool WDF332PAM,Dishwasher,34.5
+Bosch 500 Series SHP65CM5N,Dishwasher,99.1
+Miele G 7266 SCVi SF,Dishwasher,100.0
+AO Smith Signature 100 Electric Water Heater (50 gal),Water Heater,100.0
+Rheem ProTerra 50-gal Hybrid Heat Pump,Water Heater,4.3999999999999995
+Stiebel Eltron Tempra 24 Plus,Water Heater,99.9
+Goodman GSX14 3-Ton Split System,Air Conditioner,100.0
+Trane XV18 Variable-Speed Air Conditioner,Air Conditioner,100.0
+Mitsubishi Electric MUZ/MSZ-FS18 Mini-Split,Air Conditioner,100.0
+Whole-home LED retrofit (~40 bulbs),Lighting,0.0
+Blown-in cellulose insulation (to R-38),Attic Insulation,100.0

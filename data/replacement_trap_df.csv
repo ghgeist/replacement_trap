@@ -1,0 +1,12 @@
+category,model,lifespan_years,installed_cost,baseline_annual_cost,annual_operating_cost,annual_savings,annual_kwh,water_gal_per_cycle,annual_kwh_savings_raw
+Dishwasher,Whirlpool WDF332PAM,10,950,72.88565,46.800848,26.084801999999996,240,3.2,
+Dishwasher,Bosch 500 Series SHP65CM5N,11,1500,72.88565,46.800848,26.084801999999996,240,3.2,
+Dishwasher,Miele G 7266 SCVi SF,20,3000,72.88565,42.898348,29.987302,215,3.2,
+Water Heater,AO Smith Signature 100 Electric Water Heater (50 gal),10,1100,702.4499999999999,679.8154999999999,22.634500000000003,4355,,
+Water Heater,Rheem ProTerra 50-gal Hybrid Heat Pump,12,2500,702.4499999999999,179.515,522.935,1150,,
+Water Heater,Stiebel Eltron Tempra 24 Plus,12,1300,702.4499999999999,645.1613,57.28869999999995,4133,,
+Air Conditioner,Goodman GSX14 3-Ton Split System,13,9750,624.4,579.7554,44.64459999999997,3714,,
+Air Conditioner,Trane XV18 Variable-Speed Air Conditioner,15,12000,624.4,450.9729,173.4271,2889,,
+Air Conditioner,Mitsubishi Electric MUZ/MSZ-FS18 Mini-Split,15,7000,624.4,386.50359999999995,237.89640000000003,2476,,
+Lighting,Whole-home LED retrofit (~40 bulbs),13,300,257.565,51.513,206.052,330,,
+Attic Insulation,Blown-in cellulose insulation (to R-38),30,3000,702.4499999999999,640.01,62.44,4100,,400.0

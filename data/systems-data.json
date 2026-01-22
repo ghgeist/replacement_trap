@@ -1,0 +1,352 @@
+{
+  "metadata": {
+    "location": "Atlanta, GA",
+    "compiled_date": "2025-11-06",
+    "demographic_context": {
+      "cohort": "Millennial homeowner (age 35\u201340 in 2025)",
+      "home_purchase_period": "2014\u20132018",
+      "context_note": "Millennial first-time homeowners (2014-2018 purchase) inheriting appliances installed by previous owners (~2010-2015). These represent typical minimum-to-mid-range units chosen by sellers, not premium efficiency investments."
+    },
+    "baseline_parameters": {
+      "electricity_rate": {
+        "value": 0.1561,
+        "unit": "$/kWh",
+        "source": {
+          "url": "https://www.eia.gov/state/data.php?sid=GA",
+          "retrieved": "2025-11-06",
+          "note": "Georgia residential average"
+        }
+      },
+      "water_rate": {
+        "value": 0.013571,
+        "unit": "$/gal",
+        "calculation": "Water Tier 2: $5.83/1000 gal + Wastewater: $7.28/1000 gal = $13.11/1000 gal",
+        "source": {
+          "url": "https://cobbcoga.portal.civicclerk.com/event/851/files/attachment/36014",
+          "retrieved": "2025-11-06",
+          "note": "Cobb County 2025 rates; Tier 2 (4,000-15,000 gal/month) typical for 2,000 sq ft home using ~5,000 gal/month; excludes $8 monthly base charge"
+        }
+      }
+    },
+    "replacement_logic": {
+      "model_description": "Emergency replacement at expected lifespan",
+      "explanation": "Models real-world behavioral pattern (replacing at failure) with deterministic timing at expected lifespan. People know when appliances are getting old but wait until failure rather than replacing proactively.",
+      "conservative_assumption": "Real-world emergency replacements cost 20-30% more (rush fees, limited shopping time, contractor markup), but we model same cost at expected lifespan. This conservative assumption strengthens the thesis - if deterministic replacement shows a replacement trap, emergency replacement (higher cost, potentially earlier failure) would show worse outcomes.",
+      "sources": [
+        "HomeAdvisor: Emergency HVAC replacement costs 15-25% more than planned",
+        "Angi: Water heater emergency replacement premium ~20-30%",
+        "Consumer Reports: Most homeowners replace appliances at failure, not proactively"
+      ]
+    },
+    "lifespan_sources": {
+      "Air Conditioner": {
+        "baseline": "13 years - reflects older system (2012 install), harder climate (Atlanta), typical maintenance patterns",
+        "standard": "15 years - ASHRAE median for residential split systems",
+        "source": "ASHRAE median cited in systems-data.json baseline notes"
+      },
+      "Water Heater": {
+        "baseline": "10 years - standard 50-gallon electric resistance tank",
+        "range": "10-15 years industry average, 10-11 years typical",
+        "source": "Industry standard for electric resistance water heaters"
+      },
+      "Dishwasher": {
+        "baseline": "10 years - standard mid-range unit",
+        "range": "8-12 years typical, ±20% variance captures realistic variation",
+        "source": "Consumer Reports and industry standard lifespan estimates"
+      },
+      "Lighting": {
+        "baseline": "13 years - derived from average use (5 hrs/day) and 1,000-hour bulb ratings",
+        "source": "Calculated from typical incandescent/halogen bulb lifespan"
+      },
+      "Attic Insulation": {
+        "baseline": "30 years - does not degrade like mechanical systems",
+        "range": "20-30+ years for blown fiberglass/cellulose",
+        "source": "Industry standard for insulation materials"
+      }
+    }
+  },
+  "appliance_baselines": [
+    {
+      "category": "Dishwasher",
+      "existing_unit_install_year": 2015,
+      "existing_unit_age_years": 10,
+      "original_purchase_price_2015_usd": 550,
+      "adjusted_price_2025_usd": 746,
+      "installed_cost_2025_usd_point": 950,
+      "annual_kWh_point": 280,
+      "water_gal_per_cycle": 10,
+      "expected_lifespan_years": 10,
+      "notes": "Represents a standard mid-range 2015 dishwasher (~$550 purchase price, $950 installed in 2025 USD). Energy use (280 kWh/year) reflects midrange non-ENERGY STAR units; efficient models in 2015 achieved 230\u2013250 kWh."
+    },
+    {
+      "category": "Water Heater",
+      "existing_unit_install_year": 2015,
+      "existing_unit_age_years": 10,
+      "original_purchase_price_2015_usd": 550,
+      "adjusted_price_2025_usd": 746,
+      "installed_cost_2025_usd_point": 1150,
+      "energy_factor_point": 0.9,
+      "annual_kWh_point": 4500,
+      "expected_lifespan_years": 10,
+      "notes": "Represents a standard 50-gallon electric resistance tank from 2015, replaced in 2025. Annual energy use ~4,500 kWh."
+    },
+    {
+      "category": "Air Conditioner",
+      "existing_unit_install_year": 2012,
+      "existing_unit_age_years": 13,
+      "original_purchase_price_2012_usd": 6500,
+      "adjusted_price_2025_usd": 8820,
+      "installed_cost_2025_usd_point": 9500,
+      "seer_point": 13,
+      "annual_kWh_point": 4000,
+      "expected_lifespan_years": 13,
+      "notes": "Represents a standard 3-ton SEER 13 split system installed in 2012 and replaced in 2025. Lifespan of 13 years reflects older system, harder climate (Atlanta), and typical maintenance patterns. Baseline set to 4,000 kWh/year as conservative estimate accounting for typical building envelope deficiencies in homes purchased 2014-2018, consistent with DOE Zone 3A data adjusted for aging housing stock (~11% above typical 3,800 kWh/year for standard Atlanta home). ASHRAE median for residential split systems is 15 years."
+    },
+    {
+      "category": "Lighting",
+      "existing_unit_install_year": 2015,
+      "existing_unit_age_years": 10,
+      "annual_kWh_point": 1650,
+      "expected_lifespan_years": 13,
+      "notes": "Represents whole-home incandescent/halogen usage at ~1,650 kWh/year; lifespan derived from average use (5 hrs/day) and 1,000-hour bulb ratings."
+    },
+    {
+      "category": "Attic Insulation",
+      "existing_unit_install_year": 2010,
+      "existing_unit_age_years": 15,
+      "annual_kWh_point": 4500,
+      "expected_lifespan_years": 30,
+      "notes": "Represents attic with low/no insulation; 4,500 kWh/year HVAC load assumed based on DOE Zone 3A. Post-upgrade values use ~8.9% HVAC energy reduction (400 kWh/year savings)."
+    }
+  ],
+  "appliance_categories": {
+    "Category 1: Dishwashers": {
+      "expected_return_to_payback_ratio": ">1.0",
+      "Models": [
+        {
+          "Model": "Whirlpool WDF332PAM",
+          "purchase_price_usd": 600,
+          "installed_cost_usd": 950,
+          "expected_lifespan_years": 10,
+          "annual_kWh": 240,
+          "water_gal_per_cycle": 3.2,
+          "warranty_years": 1,
+          "warranty_details": "1-year limited parts",
+          "Sources": {
+            "ENERGY_STAR": "https://www.energystar.gov/productfinder/product/certified-residential-dishwashers/details/2448379",
+            "Product_Page": "https://www.whirlpool.com/appliances/dishwashers/built-in-dishwashers/wdf332pam.html",
+            "Warranty_Info": "https://www.whirlpool.com/support/warranty.html",
+            "Retail": "Home Depot, Nov 2025"
+          }
+        },
+        {
+          "Model": "Bosch 500 Series SHP65CM5N",
+          "purchase_price_usd": 1000,
+          "installed_cost_usd": 1500,
+          "expected_lifespan_years": 11,
+          "annual_kWh": 240,
+          "water_gal_per_cycle": 3.2,
+          "warranty_years": 1,
+          "warranty_details": "1-year limited parts",
+          "Sources": {
+            "ENERGY_STAR": "https://www.energystar.gov/productfinder/product/certified-residential-dishwashers/details/2407863",
+            "Product_Page": "https://www.bosch-home.com/us/products/dishwashers/series-500/shp65cm5n.html",
+            "Warranty_Info": "https://www.bosch-home.com/us/support/warranty",
+            "Retail": "Home Depot, Nov 2025"
+          }
+        },
+        {
+          "Model": "Miele G 7266 SCVi SF",
+          "purchase_price_usd": 2000,
+          "installed_cost_usd": 3000,
+          "expected_lifespan_years": 20,
+          "annual_kWh": 215,
+          "water_gal_per_cycle": 3.2,
+          "warranty_years": 2,
+          "warranty_details": "2-year full coverage, extendable",
+          "Sources": {
+            "ENERGY_STAR": "https://www.energystar.gov/productfinder/product/certified-residential-dishwashers/details/2679746",
+            "Product_Page": "https://www.mieleusa.com/e/dishwashers-built-in-dishwashers-g-7000-series-g-7266-scvi-sf-11219620-p",
+            "Warranty_Info": "https://www.mieleusa.com/e/service-support/warranty",
+            "Retail": "Home Depot, Nov 2025"
+          }
+        }
+      ],
+      "Notes": "Whirlpool and Bosch each include 1-year warranties. Miele includes 2-year full coverage, extendable.",
+      "Installation_Cost_Methodology": "Installed costs estimated as purchase_price \u00d7 1.5-1.6 multiplier (typical for dishwasher installation including removal, plumbing connections, and basic electrical). Whirlpool: $600 \u00d7 1.58 = $950; Bosch: $1000 \u00d7 1.5 = $1500; Miele: $2000 \u00d7 1.5 = $3000. Based on typical Atlanta-area installation costs for standard dishwasher replacement."
+    },
+    "Category 2: Water Heaters": {
+      "expected_return_to_payback_ratio": "mixed",
+      "Models": [
+        {
+          "Model": "AO Smith Signature 100 Electric Water Heater (50 gal)",
+          "purchase_price_usd_low": 500,
+          "purchase_price_usd_high": 700,
+          "purchase_price_usd_midpoint": 600,
+          "installed_cost_usd": 1100,
+          "expected_lifespan_years": 10,
+          "uef": 0.93,
+          "annual_kWh": 4355,
+          "annual_kWh_calculation": "Baseline 4500 kWh @ EF 0.90; new unit @ UEF 0.93 = 4500 * (0.90/0.93) = 4355 kWh",
+          "warranty_years": 6,
+          "warranty_details": "6-year limited tank and parts",
+          "Sources": {
+            "ENERGY_STAR": "Not verified - check ENERGY STAR Product Finder (https://www.energystar.gov/productfinder/product/certified-water-heaters/results/)",
+            "Product_Page": "https://www.aosmith.com/products/residential/water-heaters/electric/signature-100",
+            "Warranty_Info": "https://www.aosmith.com/support/warranty",
+            "UEF_Source": "Manufacturer specification sheet"
+          }
+        },
+        {
+          "Model": "Rheem ProTerra 50-gal Hybrid Heat Pump",
+          "purchase_price_usd_low": 1500,
+          "purchase_price_usd_high": 1800,
+          "purchase_price_usd_midpoint": 1650,
+          "installed_cost_usd": 2500,
+          "expected_lifespan_years": 12,
+          "annual_kWh": 1150,
+          "warranty_years": 10,
+          "warranty_details": "10-year limited tank and parts",
+          "Sources": {
+            "ENERGY_STAR": "https://www.energystar.gov/productfinder/product/certified-water-heaters/results/2497697",
+            "Product_Page": "https://www.rheem.com/products/residential/water-heaters/electric/proterra-hybrid-electric",
+            "Warranty_Info": "https://www.rheem.com/support/warranty",
+            "Spec_Sheet": "https://www.rheem.com/products/residential/water-heaters/electric/proterra-hybrid-electric"
+          }
+          ,"notes": "Spec is ~850–900 kWh/year; modeled at 1,150 for conservatism."
+        },
+        {
+          "Model": "Stiebel Eltron Tempra 24 Plus",
+          "purchase_price_usd_low": 700,
+          "purchase_price_usd_high": 900,
+          "purchase_price_usd_midpoint": 800,
+          "installed_cost_usd": 1300,
+          "expected_lifespan_years": 12,
+          "uef_equivalent": 0.98,
+          "annual_kWh": 4133,
+          "annual_kWh_calculation": "Baseline 4500 kWh @ EF 0.90; new unit @ UEF equivalent 0.98 = 4500 * (0.90/0.98) = 4133 kWh",
+          "warranty_years": 7,
+          "warranty_details": "7-year leakage, 3-year parts",
+          "electrical_requirements": "24 kW (3 \u00d7 40A double-pole breakers)",
+          "Sources": {
+            "ENERGY_STAR": "Not verified - check ENERGY STAR Product Finder (https://www.energystar.gov/productfinder/product/certified-water-heaters/results/)",
+            "Product_Page": "https://www.stiebel-eltron-usa.com/products/tempra-plus-whole-house-electric-tankless-water-heaters",
+            "Warranty_Info": "https://www.stiebel-eltron-usa.com/sites/default/files/pdf/warranty-tankless-electric.pdf",
+            "UEF_Source": "Manufacturer specification sheet"
+          }
+        }
+      ],
+      "Notes": "Hybrid heat pump is most rebated and stocked in the U.S., reflecting real-world R/P adoption limits.",
+      "Installation_Cost_Methodology": "Installed costs estimated as purchase_price_midpoint + $300-500 for installation (typical for water heater replacement including removal, plumbing, electrical connections, and permit). AO Smith: $600 + $500 = $1100; Rheem: $1650 + $450 = $2100; Stiebel Eltron: $800 + $500 = $1300 (tankless may require additional electrical work). Based on typical Atlanta-area installation costs for standard water heater replacement."
+    },
+    "Category 3: Air Conditioning - Atlanta": {
+      "expected_return_to_payback_ratio": "<1.0",
+      "Baseline": {
+        "Energy_Bill_USD_per_month": 186,
+        "Lifespan_years": 13,
+        "Installed_Cost_USD": 9750,
+        "Home_Size_sqft": 2000,
+        "Minimum_SEER": 14,
+        "Sources": {
+          "Energy_Cost": "https://www.atlantanewsfirst.com/2025/05/29/replacing-your-air-conditioner-is-more-expensive-than-ever/",
+          "Cost_Range": "https://guardianexperts.com/blog/what-should-a-new-heating-and-air-system-cost-in-atlanta",
+          "Regulations": "https://www.angi.com/articles/how-much-does-installing-new-ac-cost/ga/atlanta"
+        }
+      },
+      "Models": [
+        {
+          "Model": "Goodman GSX14 3-Ton Split System",
+          "seer": 14,
+          "installed_cost_usd": 9750,
+          "expected_lifespan_years": 13,
+          "annual_kWh": 3714,
+          "annual_kWh_calculation": "Baseline 4000 kWh @ SEER 13; new unit @ SEER 14 = 4000 * (13/14) = 3714 kWh",
+          "warranty_years": 10,
+          "warranty_details": "10-year limited parts",
+          "Sources": {
+            "ENERGY_STAR": "Not verified - check ENERGY STAR Product Finder (https://www.energystar.gov/productfinder/product/certified-central-air-conditioners-and-air-source-heat-pumps/results/)",
+            "Product_Page": "https://www.goodmanmfg.com/products/air-conditioners/gsx14",
+            "Warranty_Info": "https://www.goodmanmfg.com/support/warranty-lookup",
+            "SEER_Source": "Manufacturer specification sheet"
+          }
+        },
+        {
+          "Model": "Trane XV18 Variable-Speed Air Conditioner",
+          "seer": 18,
+          "installed_cost_usd": 12000,
+          "expected_lifespan_years": 15,
+          "annual_kWh": 2889,
+          "annual_kWh_calculation": "Baseline 4000 kWh @ SEER 13; new unit @ SEER 18 = 4000 * (13/18) = 2889 kWh",
+          "warranty_years": 10,
+          "warranty_details": "12-year compressor, 10-year coil and parts",
+          "Sources": {
+            "ENERGY_STAR": "Not verified - check ENERGY STAR Product Finder (https://www.energystar.gov/productfinder/product/certified-central-air-conditioners-and-air-source-heat-pumps/results/)",
+            "Product_Page": "https://www.trane.com/residential/en/products/air-conditioners/xv18/",
+            "Warranty_Info": "https://www.trane.com/residential/en/support/warranty-registration/",
+            "SEER_Source": "Manufacturer specification sheet"
+          }
+        },
+        {
+          "Model": "Mitsubishi Electric MUZ/MSZ-FS18 Mini-Split",
+          "seer": 21,
+          "installed_cost_usd": 7000,
+          "expected_lifespan_years": 15,
+          "annual_kWh": 2476,
+          "annual_kWh_calculation": "Baseline 4000 kWh @ SEER 13; new unit @ SEER 21 = 4000 * (13/21) = 2476 kWh",
+          "warranty_years": 12,
+          "warranty_details": "12-year parts & compressor (with Diamond Contractor)",
+          "Sources": {
+            "ENERGY_STAR": "Not verified - check ENERGY STAR Product Finder (https://www.energystar.gov/productfinder/product/certified-central-air-conditioners-and-air-source-heat-pumps/results/)",
+            "Product_Page": "https://www.mitsubishicomfort.com/products/indoor-units/msz-fs",
+            "Warranty_Info": "https://www.mitsubishicomfort.com/warranty",
+            "SEER_Source": "Manufacturer specification sheet"
+          }
+        }
+      ],
+      "Notes": "Represents typical Atlanta installation patterns. Premium mini-splits have highest efficiency but limited ducted retrofits.",
+      "Installation_Cost_Methodology": "Installed costs are provided as total installed costs (unit + labor + materials + ductwork where applicable) for Atlanta-area installations. Goodman: $9,750 (baseline SEER 14 minimum, includes ductwork); Trane: $12,000 (premium variable-speed, includes ductwork); Mitsubishi: $7,000 (mini-split, lower due to no ductwork required). Cost ranges validated against: (1) Guardian Experts Atlanta HVAC cost guide (https://guardianexperts.com/blog/what-should-a-new-heating-and-air-system-cost-in-atlanta) - reports $8,000-$15,000 for 3-ton systems; (2) Angi Atlanta AC installation guide (https://www.angi.com/articles/how-much-does-installing-new-ac-cost/ga/atlanta) - reports $3,500-$7,500 for unit only, $6,000-$12,000 installed; (3) Atlanta News First 2025 report (https://www.atlantanewsfirst.com/2025/05/29/replacing-your-air-conditioner-is-more-expensive-than-ever/) - notes rising costs. Selected costs represent mid-range of these sources for 3-ton systems in 2,000 sq ft homes, reflecting 2025 pricing. All costs include full installation (removal, unit, labor, materials, ductwork where applicable, permits)."
+    },
+    "Category 4: Lighting - LED Retrofits": {
+      "expected_return_to_payback_ratio": ">1.0",
+      "Models": [
+        {
+          "Model": "Whole-home LED retrofit (~40 bulbs)",
+          "purchase_price_usd": 280,
+          "installed_cost_usd": 300,
+          "expected_lifespan_years": 13,
+          "annual_kWh": 330,
+          "annual_kWh_calculation": "1,650 kWh baseline (incandescent) \u2013 330 kWh post-retrofit LED = 1,320 kWh saved/year",
+          "warranty_years": 5,
+          "warranty_details": "Typical LED 5-year limited warranty",
+          "Sources": {
+            "DOE_Lighting": "https://www.energy.gov/eere/ssl/led-basics",
+            "Contractor_Cost_Survey": "https://www.homeadvisor.com/cost/lighting-fixtures/install-lighting-fixtures/",
+            "EIA_Lighting": "https://www.eia.gov/tools/faqs/faq.php?id=99&t=3"
+          }
+        }
+      ],
+      "Notes": "Lighting modeled at whole-home level; contractor cost based on ~$0.12/sqft \u00d7 2,500 sqft. DIY costs assume ~$7/LED bulb \u00d7 40 bulbs.",
+      "Installation_Cost_Methodology": "Contractor-installed cost reflects average fixture swap in Atlanta; DIY assumes homeowner replacement of bulbs only."
+    },
+    "Category 5: Attic Insulation Upgrades": {
+      "expected_return_to_payback_ratio": ">1.0",
+      "Models": [
+        {
+          "Model": "Blown-in cellulose insulation (to R-38)",
+          "installed_cost_usd": 3000,
+          "expected_lifespan_years": 30,
+          "annual_kWh_savings": 400,
+          "annual_kWh_savings_calculation": "Assumes ~8.9% reduction of 4,500 kWh HVAC baseline = 400 kWh/year",
+          "warranty_years": 10,
+          "warranty_details": "Workmanship warranty (labor only)",
+          "Sources": {
+            "DOE_Insulation": "https://www.energy.gov/energysaver/weatherize/insulation",
+            "ORNL_Attic_Study": "https://web.ornl.gov/sci/buildings/2016/Insulation%20Fact%20Sheet.pdf"
+          }
+        }
+      ],
+      "Notes": "Assumes typical 1,000-1,200 sqft attic, contractor-installed. HVAC load savings estimated at ~8.9% reduction (400 kWh/year from 4,500 kWh baseline) for Zone 3A climate.",
+      "Installation_Cost_Methodology": "Costs reflect full attic coverage to DOE R-38 recommendation (Zone 3A) with blown-in cellulose, including labor/materials, light air-sealing, and equipment rental for a professional install. Assumes 1,100 sq ft attic area. Cost validated against: (1) HomeGuide overview of blown-in insulation ($900-$3,600 typical range); (2) HomeAdvisor attic insulation ranges ($1,500-$6,000, most common $1,680-$3,125 and $0.60-$2.30/sq ft); (3) Modernize attic insulation pricing ($1.50-$3.50/sq ft typical); (4) SCS Foam contractor quote of $1.70-$4.00/sq ft with air sealing; (5) Green Attic estimate of ~$3,200 for 1,000 sq ft to R-49; (6) DOE / ORNL insulation guidance confirming Zone 3A R-38 target. Selected $3,000 represents a mid-range Atlanta pro job (≈$2.70/sq ft) with light air sealing."
+    }
+  }
+}

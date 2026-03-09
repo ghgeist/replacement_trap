@@ -1,298 +1,234 @@
 # Replacement Trap Analysis
 
+Residential systems often fail a simple economic test: they wear out before they repay what it cost to install them. This repo analyzes that replacement cycle across common home systems using lifecycle cash-flow modeling, financing assumptions, and sensitivity analysis.
+
 **Read the essay:** [The Replacement Trap: Why Most Home Systems Die Before They Pay for Themselves](https://substack.com/@grantgeist/p-179539887)
 
-## Domain Context: Housing & Energy Lifecycle Economics
+## What This Repo Does
 
-This analysis examines the **replacement trap**—a structural problem in residential infrastructure where systems die before they can repay their installed cost, creating structural loss rather than compounding returns. The model evaluates the full lifecycle economics of home systems, from installation through replacement cycles, under realistic financing constraints and energy price volatility.
+This project models whether residential upgrades create compounding household value or reset into recurring structural loss. It evaluates 11 scenarios across five categories:
 
-**Problem Statement:** In many metro areas, most major systems in a typical home fail the same basic test: they die before they can pay for themselves. This analysis models household economics and residential infrastructure replacement cycles, revealing systems that never return what they take (e.g., most HVAC replacements under energy-only savings) versus those that escape the replacement treadmill.
+- Dishwashers
+- Water heaters
+- Air conditioners
+- Whole-home LED lighting
+- Attic insulation
 
-**Key Finding:** Nine of eleven modeled scenarios never repay their cost within their lifespan. Each cycle loses roughly $500–$1,500, creating a steady drag of about $300–$700 a year that never appears as a clean line item. Systems where value cannot be monetized (comfort/health) remain trapped, while systems with monetizable value (labor savings) can escape the trap. Only two systems escape this pattern entirely: a whole-home LED retrofit and a hybrid heat-pump water heater—both clear the hurdle of short payback and long life, generating enough surplus to break out of the cycle instead of resetting it.
+The analysis centers on four outputs:
 
-### Interpretation Boundary
+- **R/P ratio**: lifespan divided by payback period
+- **Lifetime value**: multi-year cash flow under degradation and replacement cycles
+- **Comfort gap**: non-cash value needed to justify a system that does not repay on energy savings alone
+- **Monte Carlo sensitivity**: exposure to rate and price volatility
 
-This analysis evaluates systems only on monetizable household cash flows under conservative assumptions. It does not attempt to price externalities (carbon, health risk reduction, resilience, or code compliance). Systems that "fail" in this model may still be rational when non-cash benefits dominate—but those benefits must be large enough to justify structural loss.
+## Main Finding
 
-The underlying mechanism is straightforward: the costs of installation and operation have been rising faster than the efficiency gains meant to offset them. Labor has become more expensive, and energy prices have trended upward over time. But the expected lifespans and performance improvements of major systems haven't kept pace. This creates a structural mismatch where efficiency gains are too small to cover the combined cost of the appliance, the labor to install it, and the energy needed to run it. By the time the system reaches the end of its life, it still hasn't earned back what it took to put it in place.
+Nine of the 11 modeled scenarios do not repay their installed cost within their lifespan under conservative, monetizable household cash-flow assumptions. In this framework, most replacements create a recurring drag rather than a durable return. The strongest exceptions are the whole-home LED retrofit and the hybrid heat-pump water heater, both of which clear the threshold of short payback and long enough life to generate surplus.
 
----
+## Interpretation Boundary
 
-### Who This Is For
+This repo intentionally evaluates **monetizable household cash flows**, not the full social or moral case for replacing a system. It does **not** price externalities such as:
+
+- Carbon reduction
+- Health risk reduction
+- Resilience
+- Code compliance
+- Comfort beyond what can be monetized
+
+That means a system can fail this model and still be a rational household choice. It just means the non-cash benefits have to be large enough to justify the structural loss.
+
+## Who This Is For
 
 This repo is useful if you are:
 
-- Evaluating residential retrofit economics or policy incentives
-- Modeling lifecycle payback under uncertainty
-- Designing decision tools for housing, climate, or infrastructure systems
-
-## Analysis Overview
-
-This analysis examines whether replacement cycles shorter than payback periods create structural loss for residential infrastructure investments. It evaluates 11 systems across 5 categories:
-
-- **3 Dishwashers** (replacement context - incremental savings only)
-- **3 Water Heaters** (energy savings only)
-- **3 Air Conditioners** (energy savings only)
-- **1 LED Lighting Retrofit** (whole-home LED retrofit)
-- **1 Attic Insulation Upgrade** (blown-in cellulose insulation)
-
-**Key Metrics:**
-- **R/P Ratio**: Replacement/Payback ratio (lifespan ÷ payback period)
-- **Lifetime Value**: 30-year cash flow with efficiency degradation
-- **Comfort Gap**: Intangible value needed beyond energy savings
-- **Monte Carlo**: Sensitivity to price/rate volatility
-
-**Main Finding:** Nine of eleven modeled scenarios never repay their cost within their lifespan. Systems where value cannot be monetized (comfort/health) remain trapped below R/P = 0.8, while systems with monetizable value (labor savings) can escape the replacement treadmill. Only two systems escape this pattern entirely: a whole-home LED retrofit and a hybrid heat-pump water heater—both clear the hurdle of short payback and long life, generating enough surplus to break out of the cycle instead of resetting it.
-
-The losses are small enough to disappear inside a single utility bill, but persistent enough to shape whether the household feels like it's finally getting ahead or constantly absorbing the next hit. For most households, the replacement trap shows up as a series of liquidity shocks—unplanned replacements that push families into credit cards, HELOC draws, and drained savings while still feeling like bad luck.
-
----
-
-## Directory Structure
-
-```
-replacement_trap/
-├── analysis/          # Analysis notebooks (run these)
-│   ├── replacement_trap_core.ipynb
-│   ├── replacement_trap_visualizations.ipynb
-│   └── replacement_trap_monte_carlo.ipynb
-├── data/              # Data files (input/output)
-│   ├── systems-data.json              # System specifications and baselines
-│   ├── replacement_trap_df.pkl         # Core analysis results (generated)
-│   └── monte_carlo_results.pkl        # Monte Carlo results (generated)
-├── lib/               # Python modules (shared code)
-│   ├── replacement_trap_config.py     # Configuration and constants
-│   ├── replacement_trap_utils.py       # Calculation functions
-│   ├── replacement_trap_validation.py  # Validation functions
-│   └── validate_reference_data.py     # Data validation
-├── scripts/           # Utility scripts
-│   └── generate_executive_summary.py  # Auto-generate summary data sections
-├── tests/             # Test files
-│   ├── test_calculations.py        # Tests for basic calculation functions
-│   ├── test_heloc_cash_flow.py     # Tests for HELOC cash flow calculations
-│   ├── test_validation_logic.py    # Tests for validation logic
-│   └── test_validation.py          # Integration tests for validation
-└── notes/             # Documentation and notes
-    └── [markdown files]
-```
+- Evaluating residential retrofit economics
+- Studying replacement cycles under uncertainty
+- Building policy, climate, or housing decision tools
+- Writing about the economics of home infrastructure
 
 ## Quick Start
 
-### 1. Run Core Analysis
+### 1. Create an environment
 
-Start with the core analysis notebook:
+From the project root:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+If you are using macOS or Linux:
 
 ```bash
-# Open in Jupyter
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Run the core analysis
+
+```bash
 jupyter notebook analysis/replacement_trap_core.ipynb
 ```
 
 This notebook:
-- Loads system data from `data/systems-data.json`
-- Calculates payback periods, R/P ratios, and lifetime values
-- Performs comfort gap analysis
-- Saves results to `data/replacement_trap_df.pkl`
 
-**Output:** DataFrame `df` with all calculated metrics
+- Loads `data/systems-data.json`
+- Calculates payback, R/P ratios, lifetime value, and comfort gap metrics
+- Writes the core output to `data/replacement_trap_df.pkl`
 
-### 2. Generate Visualizations (Optional)
+### 3. Run optional follow-on notebooks
+
+Visualizations:
 
 ```bash
 jupyter notebook analysis/replacement_trap_visualizations.ipynb
 ```
 
-Creates charts and plots from the core analysis results.
-
-### 3. Run Monte Carlo Analysis (Optional)
+Monte Carlo sensitivity analysis:
 
 ```bash
 jupyter notebook analysis/replacement_trap_monte_carlo.ipynb
 ```
 
-Performs sensitivity analysis with price/rate volatility. Saves results to `data/monte_carlo_results.pkl`.
+The Monte Carlo notebook writes `data/monte_carlo_results.pkl`.
 
-### 4. Generate Executive Summary Data
-
-After running the core analysis (and optionally Monte Carlo), generate the summary:
+### 4. Generate executive summary data
 
 ```bash
 python scripts/generate_executive_summary.py
 ```
 
-This creates a date-stamped file in `notes/`:
-- `notes/YYYY-MM-DD-executive-summary-data.md`
+This creates a date-stamped markdown file in `notes/` with the computed sections needed for an executive summary. Narrative sections marked `[MANUAL]` are meant to be completed by hand.
 
-The generated file contains all data sections (1-7) with calculated statistics. Narrative sections marked `[MANUAL]` should be completed manually.
+## Typical Workflow
 
-## Workflow
+1. Update assumptions in `data/systems-data.json`
+2. Run `analysis/replacement_trap_core.ipynb`
+3. Run `analysis/replacement_trap_monte_carlo.ipynb` if you want volatility analysis
+4. Run `python scripts/generate_executive_summary.py`
+5. Review the generated markdown in `notes/`
 
-### Standard Analysis Workflow
+If you change `data/systems-data.json`, re-run the core notebook before trusting any downstream outputs.
 
-1. **Update data** (if needed): Edit `data/systems-data.json`
-2. **Run core analysis**: Execute `analysis/replacement_trap_core.ipynb`
-3. **Run Monte Carlo** (optional): Execute `analysis/replacement_trap_monte_carlo.ipynb`
-4. **Generate summary**: Run `python scripts/generate_executive_summary.py`
-5. **Complete narrative**: Fill in `[MANUAL]` sections in generated summary
+## Project Layout
 
-### Updating Analysis
-
-When you update `systems-data.json`:
-- The summary script will warn if data file is newer than pickle
-- Re-run `replacement_trap_core.ipynb` to regenerate results
-- Re-run summary script to get updated numbers
+```text
+replacement_trap/
+├── analysis/
+│   ├── replacement_trap_core.ipynb
+│   ├── replacement_trap_visualizations.ipynb
+│   └── replacement_trap_monte_carlo.ipynb
+├── data/
+│   ├── systems-data.json
+│   ├── replacement_trap_df.pkl
+│   ├── monte_carlo_results.pkl
+│   ├── replacement_trap_df.csv
+│   └── monte_carlo_results.csv
+├── lib/
+│   ├── replacement_trap_config.py
+│   ├── replacement_trap_utils.py
+│   ├── replacement_trap_validation.py
+│   └── validate_reference_data.py
+├── scripts/
+│   ├── generate_executive_summary.py
+│   └── convert_pkl_to_csv.py
+├── tests/
+│   ├── test_calculations.py
+│   ├── test_heloc_cash_flow.py
+│   ├── test_validation_logic.py
+│   └── test_validation.py
+└── notes/
+```
 
 ## Key Files
 
-### Data Files
+### Data
 
-- **`data/systems-data.json`**: Source data for all systems (dishwashers, water heaters, AC, lighting, insulation)
-  - Edit this file to add/modify systems or update parameters
-- **`data/replacement_trap_df.pkl`**: Core analysis results DataFrame
-  - Generated by `replacement_trap_core.ipynb`
-  - Contains all calculated metrics (payback, R/P ratios, lifetime values, etc.)
-- **`data/monte_carlo_results.pkl`**: Monte Carlo sensitivity results
-  - Generated by `replacement_trap_monte_carlo.ipynb`
-  - Contains percentage of negative scenarios per system
-
-### Code Modules
-
-- **`lib/replacement_trap_config.py`**: Central configuration
-  - Electricity/water rates
-  - HELOC parameters
-  - Baseline system specifications
-  - Monte Carlo ranges
-- **`lib/replacement_trap_utils.py`**: Calculation functions
-  - Payback period calculations
-  - R/P ratio calculations
-  - Lifetime value calculations (cash and HELOC)
-  - Validation functions
+- `data/systems-data.json`: source assumptions for all modeled systems
+- `data/replacement_trap_df.pkl`: core analysis output used by downstream scripts and notebooks
+- `data/monte_carlo_results.pkl`: Monte Carlo output
+- `data/*.csv`: exported tabular outputs for easier inspection and sharing
 
 ### Notebooks
 
-- **`analysis/replacement_trap_core.ipynb`**: Main analysis
-  - Must run first to generate DataFrame
-  - Calculates all core metrics
-- **`analysis/replacement_trap_visualizations.ipynb`**: Charts and plots
-  - Requires core analysis to be run first
-- **`analysis/replacement_trap_monte_carlo.ipynb`**: Sensitivity analysis
-  - Requires core analysis to be run first
-  - Tests price/rate volatility impacts
+- `analysis/replacement_trap_core.ipynb`: main analysis notebook, run this first
+- `analysis/replacement_trap_visualizations.ipynb`: charts and visual outputs
+- `analysis/replacement_trap_monte_carlo.ipynb`: volatility and sensitivity analysis
 
-## Executive Summary Generation
+### Python Modules
 
-The `scripts/generate_executive_summary.py` script automatically extracts data from analysis results and generates markdown sections:
+- `lib/replacement_trap_config.py`: configuration, baseline assumptions, and ranges
+- `lib/replacement_trap_utils.py`: core calculation logic
+- `lib/replacement_trap_validation.py`: validation helpers
+- `lib/validate_reference_data.py`: reference data checks
 
-**Generated Sections:**
-1. R/P clustering statistics
-2. Threshold analysis (trapped vs surplus)
-3. HELOC financing amplification
-4. Lifespan variance sensitivity
-5. Comfort gap calculations
-6. Monte Carlo volatility results
-7. Income burden (requires manual completion)
+### Scripts
 
-**Output Format:**
-- Date-stamped filename: `YYYY-MM-DD-executive-summary-data.md`
-- Contains all calculated statistics
-- Narrative sections marked `[MANUAL]` for completion
-- Can be merged with existing executive summary document
+- `scripts/generate_executive_summary.py`: generates the data-heavy sections for an executive summary
+- `scripts/convert_pkl_to_csv.py`: exports notebook outputs to CSV
 
-## Path Detection
+## Testing
 
-All notebooks use robust path detection to find the project root directory, allowing them to work regardless of:
-- Current working directory
-- Whether running from `analysis/` or project root
-- Jupyter vs. script execution context
+Run the test suite from the project root:
 
-The path detection looks for `lib/replacement_trap_config.py` to identify the project root.
+```bash
+pytest tests/ -v
+```
+
+You can also run a focused test:
+
+```bash
+pytest tests/test_heloc_cash_flow.py
+pytest tests/test_heloc_cash_flow.py::test_heloc_replacement_year_cash_neutral_after_loan_term
+```
+
+Testing is concentrated around critical calculation paths:
+
+- Payback and R/P logic
+- HELOC cash-flow behavior
+- Validation rules and integration behavior
+
+When fixing a bug, add a regression test that fails before the fix and passes after it.
 
 ## Dependencies
+
+This repo currently expects:
 
 - Python 3.8+
 - pandas
 - numpy
-- matplotlib (for visualizations)
-- seaborn (for visualizations)
+- matplotlib
+- seaborn
+- pytest
+- jupyter
+- ipykernel
 
-All imports are handled automatically via the `lib/` directory structure.
-
-## Testing
-
-### Running Tests
-
-Run all tests from the project root:
-
-```bash
-# Run all tests
-pytest tests/
-
-# Run with verbose output
-pytest tests/ -v
-
-# Run a specific test file
-pytest tests/test_heloc_cash_flow.py
-
-# Run a specific test
-pytest tests/test_heloc_cash_flow.py::test_heloc_replacement_year_cash_neutral_after_loan_term
-```
-
-### Test Files
-
-- **`test_calculations.py`**: Tests for basic calculation functions (payback periods, R/P ratios)
-- **`test_heloc_cash_flow.py`**: Tests for HELOC cash flow calculations, including edge cases for replacement timing and loan term interactions
-- **`test_validation_logic.py`**: Tests for validation logic functions
-- **`test_validation.py`**: Integration tests for the full validation workflow
-
-### Adding Tests for Bug Fixes
-
-**Important:** When a bug is discovered (especially during PR review), add a test case to prevent regression:
-
-1. **Create a failing test** that reproduces the bug
-2. **Fix the bug** so the test passes
-3. **Keep the test** as a regression guard
-
-Example: The HELOC cash flow bug where replacement after loan term ended incorrectly added loan draw was caught and fixed with `test_heloc_replacement_year_cash_neutral_after_loan_term`.
-
-<details>
-<summary>Test Conventions and Coverage</summary>
-
-**Test Naming Convention:**
-- Use descriptive names that explain what behavior is being tested
-- Include edge case scenarios in test names (e.g., `test_heloc_replacement_year_cash_neutral_after_loan_term`)
-- Group related tests in the same file
-
-**Test Coverage:**
-- Focus on critical calculation logic (cash flows, payback periods, R/P ratios)
-- Test edge cases (replacement timing, loan term boundaries, multiple replacements)
-- Test validation logic to ensure data integrity
-
-</details>
-
-## Notes
-
-- **Pickle files**: Generated by notebooks, can be deleted and regenerated
-- **Cache**: Python `__pycache__` directories are ignored (can be deleted)
-- **Reference outputs**: Optional `reference_outputs.json` file for regression testing (if present)
+Install them with `pip install -r requirements.txt`.
 
 ## Troubleshooting
 
-### Import Errors
+### Import errors in notebooks
 
-If you see import errors:
-1. Make sure you're running notebooks from the correct directory
-2. Check that `lib/replacement_trap_config.py` exists
-3. The path detection should handle most cases automatically
+- Make sure the virtual environment is activated
+- Launch Jupyter from the project root
+- Confirm that `lib/replacement_trap_config.py` exists and has not been moved
 
-### Missing Data Files
+### Missing output files
 
-If pickle files are missing:
-- Run `replacement_trap_core.ipynb` to generate `replacement_trap_df.pkl`
-- Run `replacement_trap_monte_carlo.ipynb` to generate `monte_carlo_results.pkl`
+- Run `analysis/replacement_trap_core.ipynb` to generate `data/replacement_trap_df.pkl`
+- Run `analysis/replacement_trap_monte_carlo.ipynb` to generate `data/monte_carlo_results.pkl`
 
-### Summary Generation Errors
+### Executive summary script fails
 
-If summary script fails:
-- Ensure core analysis has been run (check for `data/replacement_trap_df.pkl`)
-- Monte Carlo results are optional (Section 6 will be skipped if missing)
-- Check that `notes/` directory exists
+- Confirm the core notebook has already been run
+- Monte Carlo output is optional; that section can be skipped if the file is missing
+- Check that `notes/` exists and is writable
+
+## Notes
+
+- Generated `.pkl` outputs can be deleted and regenerated
+- CSV outputs are convenience exports, not the canonical intermediate artifacts
+- Notebook path detection is designed to work from either the project root or the `analysis/` directory
 

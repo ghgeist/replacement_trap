@@ -125,8 +125,10 @@ replacement_trap/
 │   ├── replacement_trap_df.pkl
 │   ├── monte_carlo_results.pkl
 │   ├── replacement_trap_df.csv
-│   └── monte_carlo_results.csv
+│   ├── monte_carlo_results.csv
+│   └── reference_outputs.json
 ├── lib/
+│   ├── replacement_trap_pipeline.py
 │   ├── replacement_trap_config.py
 │   ├── replacement_trap_utils.py
 │   ├── replacement_trap_validation.py
@@ -139,6 +141,8 @@ replacement_trap/
 │   ├── test_heloc_cash_flow.py
 │   ├── test_validation_logic.py
 │   └── test_validation.py
+├── validation_checklist.md
+├── replacement_trap_validation.md
 └── notes/
 ```
 
@@ -147,18 +151,25 @@ replacement_trap/
 ### Data
 
 - `data/systems-data.json`: source assumptions for all modeled systems
-- `data/replacement_trap_df.pkl`: core analysis output used by downstream scripts and notebooks
+- `data/replacement_trap_df.pkl`: core analysis output used by downstream scripts and notebooks (includes Scenario A and Scenario B metrics)
 - `data/monte_carlo_results.pkl`: Monte Carlo output
+- `data/reference_outputs.json`: golden headline metrics for regression comparison
 - `data/*.csv`: exported tabular outputs for easier inspection and sharing
 
 ### Notebooks
 
-- `analysis/replacement_trap_core.ipynb`: main analysis notebook, run this first
+- `analysis/replacement_trap_core.ipynb`: main analysis notebook, run this first (Scenario A = replace at expected lifespan; Scenario B = replace at warranty end)
 - `analysis/replacement_trap_visualizations.ipynb`: charts and visual outputs
 - `analysis/replacement_trap_monte_carlo.ipynb`: volatility and sensitivity analysis
 
+### Validation Docs
+
+- `validation_checklist.md`: manual review checklist for sources, ranges, and thresholds
+- `replacement_trap_validation.md`: validation notes and fixed-parameter scope (Section 4.3)
+
 ### Python Modules
 
+- `lib/replacement_trap_pipeline.py`: shared builder for the core analysis DataFrame and golden reference outputs
 - `lib/replacement_trap_config.py`: configuration, baseline assumptions, and ranges
 - `lib/replacement_trap_utils.py`: core calculation logic
 - `lib/replacement_trap_validation.py`: validation helpers
@@ -168,6 +179,7 @@ replacement_trap/
 
 - `scripts/generate_executive_summary.py`: generates the data-heavy sections for an executive summary
 - `scripts/convert_pkl_to_csv.py`: exports notebook outputs to CSV
+- `scripts/regenerate_core_outputs.py`: thin CLI that calls the shared pipeline to rebuild the core DataFrame, CSV, and `data/reference_outputs.json` without launching Jupyter
 
 ## Testing
 

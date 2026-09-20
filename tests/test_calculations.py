@@ -18,6 +18,11 @@ from replacement_trap_utils import (
     calculate_payback_period,
     calculate_rp_ratio,
     calculate_lifetime_value_cash,
+    calculate_lifetime_value_heloc,
+    calculate_npv_penalty_pct,
+    calculate_scenario_b_rp,
+    calculate_lifetime_value_scenario_b_cash,
+    calculate_lifetime_value_scenario_b_heloc,
 )
 
 
@@ -146,4 +151,96 @@ class TestCashFlow:
             npv, expected_npv, rtol=1e-6,
             err_msg="Discounted cash NPV should match manual calculation"
         )
+
+
+class TestNpvPenaltyPct:
+    """Signed NPV penalty: positive means NPV is worse for the homeowner."""
+
+    def test_shrunk_loss_is_negative_penalty(self):
+        """Discounting a loss (NPV less negative) is not a penalty."""
+        penalty = calculate_npv_penalty_pct(npv_value=-19629.6, undiscounted_value=-31309.5)
+        assert penalty < 0
+        np.testing.assert_allclose(penalty, -37.3046, rtol=1e-4)
+
+    def test_shrunk_surplus_is_positive_penalty(self):
+        """Discounting a surplus (NPV smaller) is worse for the homeowner."""
+        penalty = calculate_npv_penalty_pct(npv_value=3394.1, undiscounted_value=7087.4)
+        assert penalty > 0
+        np.testing.assert_allclose(penalty, 52.1113, rtol=1e-4)
+
+    def test_zero_undiscounted_returns_nan(self):
+        assert np.isnan(calculate_npv_penalty_pct(npv_value=10, undiscounted_value=0))
+
+    def test_none_npv_returns_nan(self):
+        assert np.isnan(calculate_npv_penalty_pct(npv_value=None, undiscounted_value=-100))
+
+
+class TestScenarioB:
+    """Tests for proactive warranty-replacement (Scenario B) helpers"""
+
+    def test_scenario_b_rp_uses_warranty_years(self):
+        """Scenario B R/P uses warranty years, not expected lifespan"""
+        rp_ratio = calculate_scenario_b_rp(
+            expected_lifespan=15,
+            warranty_years=10,
+            payback_period=5,
+        )
+        assert rp_ratio == 2.0, f"Expected 2.0, got {rp_ratio}"
+
+    def test_scenario_b_rp_worse_than_or_equal_to_scenario_a(self):
+        """When warranty <= lifespan, Scenario B R/P is not better than A"""
+        lifespan = 15
+        warranty = 10
+        payback = 5
+        rp_a = calculate_rp_ratio(lifespan, payback)
+        rp_b = calculate_scenario_b_rp(lifespan, warranty, payback)
+        assert rp_b <= rp_a
+
+    def test_scenario_b_cash_matches_lifespan_as_warranty(self):
+        """Scenario B cash flow matches cash helper with lifespan=warranty"""
+        kwargs = dict(
+            installed_cost=1000,
+            annual_savings=200,
+            warranty_years=5,
+            horizon=12,
+            degradation_rate=0.015,
+            discount_rate=0.04,
+        )
+        flow_b, npv_b = calculate_lifetime_value_scenario_b_cash(**kwargs)
+        flow_a, npv_a = calculate_lifetime_value_cash(
+            installed_cost=kwargs['installed_cost'],
+            annual_savings=kwargs['annual_savings'],
+            lifespan=kwargs['warranty_years'],
+            horizon=kwargs['horizon'],
+            degradation_rate=kwargs['degradation_rate'],
+            discount_rate=kwargs['discount_rate'],
+        )
+        np.testing.assert_allclose(flow_b, flow_a)
+        np.testing.assert_allclose(npv_b, npv_a)
+
+    def test_scenario_b_heloc_matches_lifespan_as_warranty(self):
+        """Scenario B HELOC flow matches HELOC helper with lifespan=warranty"""
+        kwargs = dict(
+            installed_cost=1000,
+            annual_savings=200,
+            warranty_years=5,
+            rate=0.085,
+            loan_term=10,
+            horizon=12,
+            degradation_rate=0.015,
+            discount_rate=0.04,
+        )
+        flow_b, npv_b = calculate_lifetime_value_scenario_b_heloc(**kwargs)
+        flow_a, npv_a = calculate_lifetime_value_heloc(
+            installed_cost=kwargs['installed_cost'],
+            annual_savings=kwargs['annual_savings'],
+            lifespan=kwargs['warranty_years'],
+            rate=kwargs['rate'],
+            loan_term=kwargs['loan_term'],
+            horizon=kwargs['horizon'],
+            degradation_rate=kwargs['degradation_rate'],
+            discount_rate=kwargs['discount_rate'],
+        )
+        np.testing.assert_allclose(flow_b, flow_a)
+        np.testing.assert_allclose(npv_b, npv_a)
 

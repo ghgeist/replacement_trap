@@ -7,7 +7,7 @@ Contains all calculation functions, validation, and comparison utilities.
 import json
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict, Optional
 
 from replacement_trap_config import (
     ELECTRICITY_RATE,
@@ -156,6 +156,27 @@ def calculate_npv(cash_flows, discount_rate=0.04):
     return npv
 
 
+def calculate_npv_penalty_pct(npv_value, undiscounted_value):
+    """
+    Percent by which NPV is worse than undiscounted ending wealth.
+
+    Positive means NPV is worse for the homeowner (smaller surplus or larger loss).
+    Negative means discounting makes the outcome less severe.
+
+    Uses signed values rather than absolute magnitudes so a shrunk surplus and a
+    shrunk loss get opposite signs.
+    """
+    if npv_value is None or undiscounted_value is None:
+        return np.nan
+    npv_value = float(npv_value)
+    undiscounted_value = float(undiscounted_value)
+    if not np.isfinite(npv_value) or not np.isfinite(undiscounted_value):
+        return np.nan
+    if np.isclose(undiscounted_value, 0.0, atol=1e-9):
+        return np.nan
+    return (undiscounted_value - npv_value) / abs(undiscounted_value) * 100.0
+
+
 def calculate_lifetime_value_cash(installed_cost, annual_savings, lifespan, horizon=None,
                                   degradation_rate=None, discount_rate=0.04):
     """
@@ -278,12 +299,18 @@ def calculate_lifetime_value_heloc(installed_cost, annual_savings, lifespan,
     2. At end of draw period: If no replacement occurs during the 10-year interest-only
        period, principal is paid when loan term ends (loan converts to amortization).
     
+    3. At the analysis horizon: any remaining principal is settled in the final year so
+       ending wealth is comparable to a cash purchase. Intermediate replacements stay
+       cash-neutral (payoff offset by a new draw); without a terminal settlement the
+       outstanding note would never appear in lifetime value.
+    
     This captures the "replacement trap" dynamic: if replacement cycles are shorter than
-    payback periods, homeowners never build equity—they just roll debt forward with each
-    replacement, paying interest indefinitely.
+    payback periods, homeowners roll debt forward with each replacement, paying interest
+    indefinitely, and still owe the last principal at the horizon.
     
     Edge case: If replacement occurs exactly at year 10 (end of loan term), principal is
     paid for the old loan and a new loan is taken out in the same year (no double payment).
+    That new balance is then settled if the horizon ends the same year.
     """
     if rate is None:
         rate = HELOC_RATE
@@ -377,6 +404,13 @@ def calculate_lifetime_value_heloc(installed_cost, annual_savings, lifespan,
         if annual_cash_flow is not None:
             annual_cash_flow[year] = annual_cash
 
+    # Settle unpaid principal so ending wealth includes the outstanding note.
+    if horizon >= 1 and loan_balance > 0:
+        cash_flow[horizon] -= loan_balance
+        if annual_cash_flow is not None:
+            annual_cash_flow[horizon] -= loan_balance
+        loan_balance = 0
+
     npv_value = None
     if annual_cash_flow is not None:
         npv_value = calculate_npv(annual_cash_flow, discount_rate=discount_rate)
@@ -400,6 +434,7 @@ def calculate_scenario_b_rp(expected_lifespan, warranty_years, payback_period):
 
 def calculate_lifetime_value_scenario_b_cash(installed_cost, annual_savings,
                                              warranty_years, horizon=None,
+                                             degradation_rate=None,
                                              discount_rate=0.04):
     """
     Calculate lifetime value with proactive replacement at warranty end (cash).
@@ -413,6 +448,7 @@ def calculate_lifetime_value_scenario_b_cash(installed_cost, annual_savings,
         annual_savings,
         warranty_years,
         horizon,
+        degradation_rate=degradation_rate,
         discount_rate=discount_rate,
     )
 
@@ -420,6 +456,7 @@ def calculate_lifetime_value_scenario_b_cash(installed_cost, annual_savings,
 def calculate_lifetime_value_scenario_b_heloc(installed_cost, annual_savings,
                                               warranty_years, rate=None,
                                               loan_term=None, horizon=None,
+                                              degradation_rate=None,
                                               discount_rate=0.04):
     """
     Calculate lifetime value with proactive replacement at warranty end (HELOC).
@@ -435,6 +472,7 @@ def calculate_lifetime_value_scenario_b_heloc(installed_cost, annual_savings,
         rate,
         loan_term,
         horizon,
+        degradation_rate=degradation_rate,
         discount_rate=discount_rate,
     )
 
@@ -565,62 +603,90 @@ def validate_scenario(result: Dict[str, Any], scenario_name: str):
                 )
 
 
-def load_reference_and_compare(current_outputs: Dict[str, Any], tolerance: float = 1e-6):
+def _assert_reference_value_matches(
+    ref_val: Any,
+    curr_val: Any,
+    label: str,
+    tolerance: float,
+) -> None:
+    """Assert one reference node matches the current output (numeric, dict, or list)."""
+    if isinstance(ref_val, (int, float)) and isinstance(curr_val, (int, float)):
+        if np.isinf(ref_val) and np.isinf(curr_val):
+            return
+        assert abs(curr_val - ref_val) < tolerance, (
+            f"{label} changed: {ref_val} → {curr_val} (diff: {abs(curr_val - ref_val)})"
+        )
+        return
+    if isinstance(ref_val, dict) and isinstance(curr_val, dict):
+        # Normalize keys to strings so JSON-loaded references match in-memory dicts
+        curr_normalized = {str(k): v for k, v in curr_val.items()}
+        for subkey, ref_subval in ref_val.items():
+            subkey_str = str(subkey)
+            assert subkey_str in curr_normalized, (
+                f"{label}.{subkey_str} in reference but not in current outputs"
+            )
+            _assert_reference_value_matches(
+                ref_subval,
+                curr_normalized[subkey_str],
+                f"{label}.{subkey_str}",
+                tolerance,
+            )
+        return
+    if isinstance(ref_val, list) and isinstance(curr_val, list):
+        assert len(ref_val) == len(curr_val), (
+            f"{label} list length changed: {len(ref_val)} → {len(curr_val)}"
+        )
+        for i, (ref_item, curr_item) in enumerate(zip(ref_val, curr_val)):
+            _assert_reference_value_matches(ref_item, curr_item, f"{label}[{i}]", tolerance)
+        return
+    assert ref_val == curr_val, f"{label} changed: {ref_val} → {curr_val}"
+
+
+def load_reference_and_compare(
+    current_outputs: Dict[str, Any],
+    tolerance: float = 1e-6,
+    reference_path: Optional[Path] = None,
+):
     """
     Compare current run against reference outputs from reference_outputs.json.
-    
+
     Args:
         current_outputs: Dictionary of current outputs to compare
         tolerance: Tolerance for numeric comparisons (default 1e-6)
-    
-    Raises:
-        AssertionError: If outputs don't match reference within tolerance
-    """
-    # Look for reference_outputs.json starting from repo root
-    reference_candidates = [
-        Path(__file__).parent.parent / 'reference_outputs.json',  # repository root
-        Path(__file__).parent / 'reference_outputs.json',  # notebooks directory
-        Path(__file__).parent.parent / 'data' / 'reference_outputs.json',  # data directory fallback
-    ]
+        reference_path: Optional explicit path; otherwise search known locations
 
-    reference_path = next((path for path in reference_candidates if path.exists()), None)
+    Raises:
+        FileNotFoundError: If the reference file cannot be found
+        AssertionError: If a reference key is missing or a value differs
+    """
     if reference_path is None:
-        search_list = ", ".join(str(path) for path in reference_candidates)
-        print(f"Warning: Reference file not found in any of [{search_list}]. Skipping comparison.")
-        return
-    
+        reference_candidates = [
+            Path(__file__).parent.parent / 'reference_outputs.json',  # repository root
+            Path(__file__).parent / 'reference_outputs.json',  # lib directory
+            Path(__file__).parent.parent / 'data' / 'reference_outputs.json',
+        ]
+        reference_path = next((path for path in reference_candidates if path.exists()), None)
+        if reference_path is None:
+            search_list = ", ".join(str(path) for path in reference_candidates)
+            raise FileNotFoundError(
+                f"Reference file not found in any of [{search_list}]"
+            )
+    else:
+        reference_path = Path(reference_path)
+        if not reference_path.exists():
+            raise FileNotFoundError(f"Reference file not found: {reference_path}")
+
     with open(reference_path, 'r') as f:
         reference = json.load(f)
-    
+
     for key in reference:
-        if key not in current_outputs:
-            print(f"Warning: Key '{key}' in reference but not in current outputs")
-            continue
-        
-        ref_val = reference[key]
-        curr_val = current_outputs[key]
-        
-        if isinstance(ref_val, (int, float)) and isinstance(curr_val, (int, float)):
-            if np.isinf(ref_val) and np.isinf(curr_val):
-                continue  # Both infinite, match
-            assert abs(curr_val - ref_val) < tolerance, \
-                f"{key} changed: {ref_val} → {curr_val} (diff: {abs(curr_val - ref_val)})"
-        elif isinstance(ref_val, dict) and isinstance(curr_val, dict):
-            # Recursive comparison for nested dicts
-            for subkey in ref_val:
-                if subkey in curr_val:
-                    ref_subval = ref_val[subkey]
-                    curr_subval = curr_val[subkey]
-                    if isinstance(ref_subval, (int, float)) and isinstance(curr_subval, (int, float)):
-                        if not (np.isinf(ref_subval) and np.isinf(curr_subval)):
-                            assert abs(curr_subval - ref_subval) < tolerance, \
-                                f"{key}.{subkey} changed: {ref_subval} → {curr_subval}"
-        elif isinstance(ref_val, list) and isinstance(curr_val, list):
-            assert len(ref_val) == len(curr_val), \
-                f"{key} list length changed: {len(ref_val)} → {len(curr_val)}"
-            for i, (ref_item, curr_item) in enumerate(zip(ref_val, curr_val)):
-                if isinstance(ref_item, (int, float)) and isinstance(curr_item, (int, float)):
-                    if not (np.isinf(ref_item) and np.isinf(curr_item)):
-                        assert abs(curr_item - ref_item) < tolerance, \
-                            f"{key}[{i}] changed: {ref_item} → {curr_item}"
+        assert key in current_outputs, (
+            f"Key '{key}' in reference but not in current outputs"
+        )
+        _assert_reference_value_matches(
+            reference[key],
+            current_outputs[key],
+            key,
+            tolerance,
+        )
 

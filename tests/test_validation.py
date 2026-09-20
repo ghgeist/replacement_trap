@@ -168,7 +168,7 @@ Run automated validators regularly; review checklist quarterly or before major u
     # Save to file if path provided
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(report)
         print(f"\nReport saved to: {output_path}")
     

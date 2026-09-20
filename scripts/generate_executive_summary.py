@@ -9,7 +9,7 @@ Narrative sections ("Finding:" paragraphs) are left blank for manual completion.
 
 import sys
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import pandas as pd
 import numpy as np
 
@@ -190,20 +190,32 @@ def generate_section_3_financing(df):
         trapped_worse = 0
     
     if len(surplus) > 0:
-        surplus_penalty = surplus['financing_penalty_usd']
-        surplus_penalty_max = surplus_penalty.max() if len(surplus_penalty) > 0 else 0
+        surplus_penalty_bits = [
+            f"{row['model']}: ${row['financing_penalty_usd']:,.0f}"
+            for _, row in surplus.iterrows()
+        ]
+        surplus_penalty_text = '; '.join(surplus_penalty_bits)
+        surplus_heloc_positive = bool(
+            (surplus['lifetime_value_heloc_scenario_a'] > 0).all()
+        )
+        surplus_heloc_clause = (
+            'HELOC reduces surplus but remains positive'
+            if surplus_heloc_positive
+            else 'HELOC reduces surplus'
+        )
     else:
-        surplus_penalty_max = 0
+        surplus_penalty_text = 'n/a'
+        surplus_heloc_clause = 'none'
     
     md = f"""### 3. How much does HELOC financing amplify the problem?
 
 HELOC amplifies losses by {trapped_amp_min:.2f}–{trapped_amp_max:.2f}x (avg {trapped_amp_mean:.2f}x) for trapped systems.
 
 - **Trapped systems ({len(trapped)} of {len(df)}):** All negative with cash; HELOC worsens {trapped_worse}/{len(trapped)}
-  - Financing penalty: ${trapped_penalty_min:,.0f}–${trapped_penalty_max:,.0f} over 30 years (interest-only for 10 years)
+  - Financing penalty: ${trapped_penalty_min:,.0f}–${trapped_penalty_max:,.0f} over 30 years (interest-only for 10 years; remaining principal settled at horizon)
   - Amplification factor: Up to {trapped_amp_max:.2f}x (makes losses deeper)
-- **Surplus generators ({len(surplus)} of {len(df)}):** Both positive with cash; HELOC reduces surplus but remains positive
-  - Penalty: ${surplus_penalty_max:,.0f} (heat pump remains positive)
+- **Surplus generators ({len(surplus)} of {len(df)}):** Both positive with cash; {surplus_heloc_clause}
+  - Penalty: {surplus_penalty_text}
 
 **Finding:** [MANUAL: Your interpretation here]
 
@@ -266,23 +278,28 @@ def generate_section_5_comfort_gap(df):
 ---
 """
     
-    comfort_gaps = df['comfort_gap']
+    comfort_categories = ['Water Heater', 'Air Conditioner', 'Attic Insulation']
+    env = df[df['category'].isin(comfort_categories)].copy() if 'category' in df.columns else df
+    if env.empty:
+        env = df
+
+    comfort_gaps = env['comfort_gap']
     gap_min = comfort_gaps.min()
     gap_max = comfort_gaps.max()
     gap_mean = comfort_gaps.mean()
     
-    comfort_gaps_per_hour = df['comfort_gap_per_hour']
+    comfort_gaps_per_hour = env['comfort_gap_per_hour']
     gap_per_hour_min = comfort_gaps_per_hour.min()
     gap_per_hour_max = comfort_gaps_per_hour.max()
     
     # Find example system with highest gap
     max_gap_idx = comfort_gaps.idxmax()
-    max_gap_system = df.loc[max_gap_idx, 'model']
+    max_gap_system = env.loc[max_gap_idx, 'model']
     max_gap_value = comfort_gaps.max()
-    max_gap_per_hour = df.loc[max_gap_idx, 'comfort_gap_per_hour']
+    max_gap_per_hour = env.loc[max_gap_idx, 'comfort_gap_per_hour']
     
-    # Calculate correlation with R/P
-    correlation = df['comfort_gap'].corr(df['rp_ratio_scenario_a'])
+    # Calculate correlation with R/P among environmental utilities only
+    correlation = env['comfort_gap'].corr(env['rp_ratio_scenario_a'])
     
     md = f"""### 5. What is the "comfort gap" for environmental utilities?
 
@@ -374,8 +391,9 @@ This section needs manual completion or additional analysis with Census income d
 
 def generate_summary(df, mc_results):
     """Generate complete summary markdown."""
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    date_str = datetime.now().strftime('%Y-%m-%d')
+    now = datetime.now(timezone.utc)
+    timestamp = now.strftime('%Y-%m-%d %H:%M:%S UTC')
+    date_str = now.strftime('%Y-%m-%d')
     
     sections = []
     sections.append(f"""---
@@ -427,7 +445,7 @@ def main():
         # Write to file
         notebooks_root = determine_notebooks_root()
         notes_dir = notebooks_root / 'notes'
-        date_str = datetime.now().strftime('%Y-%m-%d')
+        date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         output_path = notes_dir / f'{date_str}-executive-summary-data.md'
         
         output_path.write_text(summary_md, encoding='utf-8')

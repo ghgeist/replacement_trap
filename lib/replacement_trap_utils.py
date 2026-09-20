@@ -400,6 +400,7 @@ def calculate_scenario_b_rp(expected_lifespan, warranty_years, payback_period):
 
 def calculate_lifetime_value_scenario_b_cash(installed_cost, annual_savings,
                                              warranty_years, horizon=None,
+                                             degradation_rate=None,
                                              discount_rate=0.04):
     """
     Calculate lifetime value with proactive replacement at warranty end (cash).
@@ -413,6 +414,7 @@ def calculate_lifetime_value_scenario_b_cash(installed_cost, annual_savings,
         annual_savings,
         warranty_years,
         horizon,
+        degradation_rate=degradation_rate,
         discount_rate=discount_rate,
     )
 
@@ -420,6 +422,7 @@ def calculate_lifetime_value_scenario_b_cash(installed_cost, annual_savings,
 def calculate_lifetime_value_scenario_b_heloc(installed_cost, annual_savings,
                                               warranty_years, rate=None,
                                               loan_term=None, horizon=None,
+                                              degradation_rate=None,
                                               discount_rate=0.04):
     """
     Calculate lifetime value with proactive replacement at warranty end (HELOC).
@@ -435,6 +438,7 @@ def calculate_lifetime_value_scenario_b_heloc(installed_cost, annual_savings,
         rate,
         loan_term,
         horizon,
+        degradation_rate=degradation_rate,
         discount_rate=discount_rate,
     )
 
@@ -606,15 +610,21 @@ def load_reference_and_compare(current_outputs: Dict[str, Any], tolerance: float
             assert abs(curr_val - ref_val) < tolerance, \
                 f"{key} changed: {ref_val} → {curr_val} (diff: {abs(curr_val - ref_val)})"
         elif isinstance(ref_val, dict) and isinstance(curr_val, dict):
-            # Recursive comparison for nested dicts
-            for subkey in ref_val:
-                if subkey in curr_val:
-                    ref_subval = ref_val[subkey]
-                    curr_subval = curr_val[subkey]
-                    if isinstance(ref_subval, (int, float)) and isinstance(curr_subval, (int, float)):
-                        if not (np.isinf(ref_subval) and np.isinf(curr_subval)):
-                            assert abs(curr_subval - ref_subval) < tolerance, \
-                                f"{key}.{subkey} changed: {ref_subval} → {curr_subval}"
+            # Normalize keys to strings so JSON-loaded references match in-memory dicts
+            curr_normalized = {str(k): v for k, v in curr_val.items()}
+            for subkey, ref_subval in ref_val.items():
+                subkey_str = str(subkey)
+                if subkey_str not in curr_normalized:
+                    print(f"Warning: Key '{key}.{subkey_str}' in reference but not in current outputs")
+                    continue
+                curr_subval = curr_normalized[subkey_str]
+                if isinstance(ref_subval, (int, float)) and isinstance(curr_subval, (int, float)):
+                    if not (np.isinf(ref_subval) and np.isinf(curr_subval)):
+                        assert abs(curr_subval - ref_subval) < tolerance, \
+                            f"{key}.{subkey_str} changed: {ref_subval} → {curr_subval}"
+                elif ref_subval != curr_subval:
+                    assert ref_subval == curr_subval, \
+                        f"{key}.{subkey_str} changed: {ref_subval} → {curr_subval}"
         elif isinstance(ref_val, list) and isinstance(curr_val, list):
             assert len(ref_val) == len(curr_val), \
                 f"{key} list length changed: {len(ref_val)} → {len(curr_val)}"

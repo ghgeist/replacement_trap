@@ -202,7 +202,12 @@ def validate_systems_data() -> DataValidationResult:
                     continue
                 
                 # Validate each model
-                required_model_fields = ['Model', 'installed_cost_usd', 'expected_lifespan_years']
+                required_model_fields = [
+                    'Model',
+                    'installed_cost_usd',
+                    'expected_lifespan_years',
+                    'warranty_years',
+                ]
                 
                 for j, model in enumerate(models):
                     if not isinstance(model, dict):
@@ -225,6 +230,23 @@ def validate_systems_data() -> DataValidationResult:
                             result.add_warning(
                                 f"{category_name}/{model_name}: Lifespan ({lifespan} years) "
                                 f"outside typical range (5-30 years)"
+                            )
+                    
+                    # Validate warranty years (required for Scenario B)
+                    if 'warranty_years' in model:
+                        warranty = model['warranty_years']
+                        if not isinstance(warranty, (int, float)) or warranty <= 0:
+                            result.add_error(
+                                f"{category_name}/{model_name}: Invalid warranty_years: {warranty}"
+                            )
+                        elif (
+                            'expected_lifespan_years' in model
+                            and isinstance(model['expected_lifespan_years'], (int, float))
+                            and warranty > model['expected_lifespan_years']
+                        ):
+                            result.add_error(
+                                f"{category_name}/{model_name}: warranty_years ({warranty}) "
+                                f"exceeds expected_lifespan_years ({model['expected_lifespan_years']})"
                             )
                     
                     # Validate installed cost

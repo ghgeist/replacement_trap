@@ -14,8 +14,8 @@ lib_path = Path(__file__).parent.parent / 'lib'
 if str(lib_path) not in sys.path:
     sys.path.insert(0, str(lib_path))
 
-from replacement_trap_validation import validate_internal_consistency, ValidationResult
-from replacement_trap_config import WATER_RATE, WATER_MULTIPLIER_MIN, WATER_MULTIPLIER_MAX
+from replacement_trap_validation import validate_internal_consistency
+from validate_reference_data import validate_systems_data
 
 
 def test_water_multiplier_min_equals_one_no_error():
@@ -92,4 +92,50 @@ def test_water_multiplier_min_less_than_one_allows_decrease():
             f"Should NOT error when WATER_MULTIPLIER_MIN < 1.0 (allows decrease), "
             f"errors: {result.errors}"
         )
+
+
+def test_systems_data_requires_warranty_years():
+    """Real systems-data.json must include warranty_years on every model."""
+    result = validate_systems_data()
+    warranty_errors = [e for e in result.errors if 'warranty_years' in e]
+    assert not warranty_errors, f"Unexpected warranty errors: {warranty_errors}"
+    assert result.passed or not any('Missing required field' in e for e in result.errors)
+
+
+def test_missing_warranty_years_errors(tmp_path, monkeypatch):
+    """Missing warranty_years on a model is a validation error."""
+    import json
+    from pathlib import Path
+    import validate_reference_data as vrd
+
+    systems = json.loads(Path(vrd.SYSTEMS_DATA_PATH).read_text(encoding='utf-8'))
+    model = systems['appliance_categories']['Category 1: Dishwashers']['Models'][0]
+    model.pop('warranty_years', None)
+
+    bad_path = tmp_path / 'systems-data.json'
+    bad_path.write_text(json.dumps(systems), encoding='utf-8')
+    monkeypatch.setattr(vrd, 'SYSTEMS_DATA_PATH', bad_path)
+
+    result = vrd.validate_systems_data()
+    assert not result.passed
+    assert any('Missing required field \'warranty_years\'' in e for e in result.errors)
+
+
+def test_warranty_longer_than_lifespan_errors(tmp_path, monkeypatch):
+    """warranty_years > expected_lifespan_years is a validation error."""
+    import json
+    from pathlib import Path
+    import validate_reference_data as vrd
+
+    systems = json.loads(Path(vrd.SYSTEMS_DATA_PATH).read_text(encoding='utf-8'))
+    model = systems['appliance_categories']['Category 1: Dishwashers']['Models'][0]
+    model['warranty_years'] = model['expected_lifespan_years'] + 5
+
+    bad_path = tmp_path / 'systems-data.json'
+    bad_path.write_text(json.dumps(systems), encoding='utf-8')
+    monkeypatch.setattr(vrd, 'SYSTEMS_DATA_PATH', bad_path)
+
+    result = vrd.validate_systems_data()
+    assert not result.passed
+    assert any('exceeds expected_lifespan_years' in e for e in result.errors)
 

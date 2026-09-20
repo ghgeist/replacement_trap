@@ -48,3 +48,6 @@ Thumbs.db
 
 # Keep reference outputs if they exist
 # reference_outputs.json
+
+# Generated validation report (rewritten by tests/test_validation.py)
+tests/validation_report.md

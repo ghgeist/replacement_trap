@@ -31,6 +31,7 @@ from replacement_trap_utils import (
     calculate_lifetime_value_heloc,
     calculate_lifetime_value_scenario_b_cash,
     calculate_lifetime_value_scenario_b_heloc,
+    calculate_npv_penalty_pct,
     calculate_payback_period,
     calculate_rp_ratio,
     calculate_scenario_b_rp,
@@ -238,7 +239,6 @@ def build_core_dataframe(systems_data_path: Optional[Path] = None) -> pd.DataFra
     heloc_values = df['lifetime_value_heloc_scenario_a']
     cash_npv_values = df['npv_cash_4pct']
     negative_cash_mask = cash_values < 0
-    cash_zero_mask = np.isclose(cash_values, 0, atol=1e-9)
     financing_penalty = heloc_values - cash_values
     df['financing_penalty_usd'] = financing_penalty
     df['amplification_factor'] = np.where(
@@ -246,11 +246,10 @@ def build_core_dataframe(systems_data_path: Optional[Path] = None) -> pd.DataFra
         np.abs(financing_penalty / cash_values),
         np.nan,
     )
-    df['npv_penalty_pct'] = np.where(
-        cash_zero_mask,
-        np.nan,
-        (np.abs(cash_values) - np.abs(cash_npv_values)) / np.abs(cash_values) * 100,
-    )
+    df['npv_penalty_pct'] = [
+        calculate_npv_penalty_pct(npv, cash)
+        for npv, cash in zip(cash_npv_values, cash_values)
+    ]
     df = pd.concat([df, df.apply(cash_b, axis=1), df.apply(heloc_b, axis=1)], axis=1)
 
     df['breakeven_annual_savings'] = df['installed_cost'] / df['lifespan_years']

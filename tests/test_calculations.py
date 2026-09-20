@@ -19,6 +19,7 @@ from replacement_trap_utils import (
     calculate_rp_ratio,
     calculate_lifetime_value_cash,
     calculate_lifetime_value_heloc,
+    calculate_npv_penalty_pct,
     calculate_scenario_b_rp,
     calculate_lifetime_value_scenario_b_cash,
     calculate_lifetime_value_scenario_b_heloc,
@@ -150,6 +151,28 @@ class TestCashFlow:
             npv, expected_npv, rtol=1e-6,
             err_msg="Discounted cash NPV should match manual calculation"
         )
+
+
+class TestNpvPenaltyPct:
+    """Signed NPV penalty: positive means NPV is worse for the homeowner."""
+
+    def test_shrunk_loss_is_negative_penalty(self):
+        """Discounting a loss (NPV less negative) is not a penalty."""
+        penalty = calculate_npv_penalty_pct(npv_value=-19629.6, undiscounted_value=-31309.5)
+        assert penalty < 0
+        np.testing.assert_allclose(penalty, -37.3046, rtol=1e-4)
+
+    def test_shrunk_surplus_is_positive_penalty(self):
+        """Discounting a surplus (NPV smaller) is worse for the homeowner."""
+        penalty = calculate_npv_penalty_pct(npv_value=3394.1, undiscounted_value=7087.4)
+        assert penalty > 0
+        np.testing.assert_allclose(penalty, 52.1113, rtol=1e-4)
+
+    def test_zero_undiscounted_returns_nan(self):
+        assert np.isnan(calculate_npv_penalty_pct(npv_value=10, undiscounted_value=0))
+
+    def test_none_npv_returns_nan(self):
+        assert np.isnan(calculate_npv_penalty_pct(npv_value=None, undiscounted_value=-100))
 
 
 class TestScenarioB:

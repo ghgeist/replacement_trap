@@ -15,6 +15,7 @@ if str(lib_path) not in sys.path:
     sys.path.insert(0, str(lib_path))
 
 from replacement_trap_pipeline import build_core_dataframe, build_reference_outputs
+from replacement_trap_utils import calculate_npv_penalty_pct
 
 ROOT = Path(__file__).parent.parent
 PKL_PATH = ROOT / 'data' / 'replacement_trap_df.pkl'
@@ -88,3 +89,29 @@ def test_reference_outputs_match_committed(rebuilt_df):
             assert abs(curr_val - ref_val) < 1e-9, key
         else:
             assert curr_val == ref_val
+
+
+def test_npv_penalty_matches_shared_helper(rebuilt_df):
+    """Pipeline npv_penalty_pct must use the signed shared helper, not abs-magnitudes."""
+    expected = [
+        calculate_npv_penalty_pct(npv, cash)
+        for npv, cash in zip(
+            rebuilt_df['npv_cash_4pct'],
+            rebuilt_df['lifetime_value_cash_scenario_a'],
+        )
+    ]
+    np.testing.assert_allclose(
+        rebuilt_df['npv_penalty_pct'].to_numpy(dtype=float),
+        np.asarray(expected, dtype=float),
+        rtol=1e-9,
+        atol=1e-9,
+        equal_nan=True,
+    )
+    trane = rebuilt_df[rebuilt_df['model'].str.contains('Trane')].iloc[0]
+    assert trane['npv_penalty_pct'] < 0, (
+        "Discounting shrinks the Trane loss; penalty must be negative"
+    )
+    rheem = rebuilt_df[rebuilt_df['model'].str.contains('Rheem')].iloc[0]
+    assert rheem['npv_penalty_pct'] > 0, (
+        "Discounting shrinks the Rheem surplus; penalty must be positive"
+    )

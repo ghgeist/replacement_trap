@@ -188,11 +188,12 @@ def test_heloc_npv_matches_manual_discount():
     discount_rate = 0.05
     horizon = 3
     annual_savings = 150
+    installed_cost = 2000
     _, npv = calculate_lifetime_value_heloc(
-        installed_cost=2000,
+        installed_cost=installed_cost,
         annual_savings=annual_savings,
         lifespan=40,
-        rate=0.0,          # Remove interest so cash flow equals savings
+        rate=0.0,          # Remove interest so cash flow equals savings until terminal payoff
         loan_term=30,
         horizon=horizon,
         degradation_rate=0.0,
@@ -200,9 +201,54 @@ def test_heloc_npv_matches_manual_discount():
     )
     expected_npv = sum(
         annual_savings / ((1 + discount_rate) ** year)
-        for year in range(1, horizon + 1)
+        for year in range(1, horizon)
     )
+    expected_npv += (annual_savings - installed_cost) / ((1 + discount_rate) ** horizon)
     np.testing.assert_allclose(
         npv, expected_npv, rtol=1e-6,
-        err_msg="HELOC NPV should match manual discounted cash flow when interest is zero"
+        err_msg="HELOC NPV should match manual discounted cash flow including terminal principal"
     )
+
+
+def test_heloc_settles_remaining_principal_at_horizon(standard_params):
+    """Unpaid principal at the horizon is a terminal cash outflow."""
+    cost = standard_params['cost']
+    savings = standard_params['savings']
+    rate = standard_params['rate']
+    horizon = 6
+    cash_flow, _ = calculate_lifetime_value_heloc(
+        installed_cost=cost,
+        annual_savings=savings,
+        lifespan=20,  # No replacement during the horizon
+        rate=rate,
+        loan_term=10,
+        horizon=horizon,
+        degradation_rate=0.0,
+    )
+    # Years 1-5: savings - interest only. Year 6 also settles remaining principal.
+    expected_before_terminal = 5 * (savings - cost * rate)
+    expected_year6 = expected_before_terminal + (savings - cost * rate) - cost
+    np.testing.assert_almost_equal(cash_flow[5], expected_before_terminal)
+    np.testing.assert_almost_equal(
+        cash_flow[horizon],
+        expected_year6,
+        err_msg="Horizon cash flow should subtract remaining HELOC principal",
+    )
+
+
+def test_heloc_does_not_double_charge_when_term_ends_before_horizon(standard_params):
+    """If principal is paid when the draw period ends, do not settle it again."""
+    cost = standard_params['cost']
+    savings = standard_params['savings']
+    cash_flow, _ = calculate_lifetime_value_heloc(
+        installed_cost=cost,
+        annual_savings=savings,
+        lifespan=40,
+        rate=0.0,
+        loan_term=3,
+        horizon=5,
+        degradation_rate=0.0,
+    )
+    # Year 3 pays principal at term end; years 4-5 are savings only.
+    np.testing.assert_almost_equal(cash_flow[3], savings * 3 - cost)
+    np.testing.assert_almost_equal(cash_flow[5], savings * 5 - cost)

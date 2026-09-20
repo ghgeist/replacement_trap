@@ -16,6 +16,7 @@ if str(lib_path) not in sys.path:
 
 from replacement_trap_validation import validate_internal_consistency
 from validate_reference_data import validate_systems_data
+from replacement_trap_utils import load_reference_and_compare
 
 
 def test_water_multiplier_min_equals_one_no_error():
@@ -139,3 +140,44 @@ def test_warranty_longer_than_lifespan_errors(tmp_path, monkeypatch):
     assert not result.passed
     assert any('exceeds expected_lifespan_years' in e for e in result.errors)
 
+
+def test_load_reference_raises_when_file_missing(tmp_path):
+    """Missing golden file is an error, not a silent skip."""
+    missing = tmp_path / 'does-not-exist.json'
+    with pytest.raises(FileNotFoundError, match='Reference file not found'):
+        load_reference_and_compare({'rp_ratio_mean': 1.0}, reference_path=missing)
+
+
+def test_load_reference_raises_when_top_level_key_missing(tmp_path):
+    """A golden key absent from current outputs must fail the comparison."""
+    import json
+
+    ref_path = tmp_path / 'reference_outputs.json'
+    ref_path.write_text(json.dumps({'rp_ratio_mean': 1.0, 'surplus_generator_count': 2}), encoding='utf-8')
+    with pytest.raises(AssertionError, match="Key 'surplus_generator_count'"):
+        load_reference_and_compare({'rp_ratio_mean': 1.0}, reference_path=ref_path)
+
+
+def test_load_reference_raises_when_nested_key_missing(tmp_path):
+    """A nested golden key absent from current outputs must fail the comparison."""
+    import json
+
+    ref_path = tmp_path / 'reference_outputs.json'
+    ref_path.write_text(
+        json.dumps({'payback_periods': {'0': 10.0, '1': 20.0}}),
+        encoding='utf-8',
+    )
+    with pytest.raises(AssertionError, match=r'payback_periods\.1 in reference'):
+        load_reference_and_compare(
+            {'payback_periods': {0: 10.0}},
+            reference_path=ref_path,
+        )
+
+
+def test_load_reference_accepts_stringified_nested_keys(tmp_path):
+    """JSON string keys match in-memory integer keys after normalization."""
+    import json
+
+    ref_path = tmp_path / 'reference_outputs.json'
+    ref_path.write_text(json.dumps({'payback_periods': {'0': 10.0}}), encoding='utf-8')
+    load_reference_and_compare({'payback_periods': {0: 10.0}}, reference_path=ref_path)

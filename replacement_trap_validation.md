@@ -17,7 +17,7 @@ python tests/test_validation.py
 
 ## 3. Reference Outputs
 
-Golden metrics live in `data/reference_outputs.json`, built by `build_reference_outputs()` in `lib/replacement_trap_pipeline.py`. The core notebook and regenerate script compare the **full** payload (not a subset) via `load_reference_and_compare`. Refresh with `python scripts/regenerate_core_outputs.py` after intentional metric changes; `tests/test_pipeline_parity.py` locks the committed pickle/CSV/reference trio.
+Golden metrics live in `data/reference_outputs.json`, built by `build_reference_outputs()` in `lib/replacement_trap_pipeline.py`. The core notebook compares the **full** payload via `load_reference_and_compare`, which raises `FileNotFoundError` if the golden file is missing and `AssertionError` if any reference key is absent or a value drifted. Refresh golden files with `python scripts/regenerate_core_outputs.py` after intentional metric changes (that script writes artifacts; it does not compare). `tests/test_pipeline_parity.py` locks the committed pickle/CSV/reference trio.
 
 ## 4. Scope Limitations
 
@@ -46,4 +46,4 @@ If these become first-class sensitivity axes, update Monte Carlo inputs and rege
 
 ## 5. HELOC Modeling Notes
 
-HELOC cash flows assume interest-only payments during the loan term, with replacement-year debt roll-forward while the facility is open. Unit tests in `tests/test_heloc_cash_flow.py` encode the intended cash-neutrality invariants.
+HELOC cash flows assume interest-only payments during the loan term, with replacement-year debt roll-forward while the facility is open. Any principal still outstanding at the analysis horizon is subtracted from the final year so ending wealth includes the unpaid note. Unit tests in `tests/test_heloc_cash_flow.py` encode the cash-neutrality and terminal-settlement invariants.
